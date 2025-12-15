@@ -45,6 +45,11 @@
   <h2>Output / Lösning:</h2>
   <pre id="output" aria-live="polite" role="status"></pre>
 
+<div>
+  <button id="prevStepBtn" disabled>Föregående</button>
+  <button id="nextStepBtn" disabled>Nästa</button>
+</div>
+
   <script>
     const blocks = [];
     let blockCounter = { A: 0, B: 0, C: 0, D: 0 };
@@ -145,19 +150,29 @@
       }
 
       heuristic() {
+        // Hitta A-blocket
         const aBlock = this.blocks.find(b => b.id === 'A');
         if (!aBlock) return 9999;
         const [y, x] = aBlock.position;
+        // Grundavstånd till målposition (rad 3, kolumn 1)
         let h = Math.abs(3 - y) + Math.abs(1 - x);
-        for (let dx = 0; dx < 2; dx++) {
-          const blockBelow = this.blocks.find(b => {
-            if (b.id === 'A') return false;
-            const [by, bx] = b.position;
-            const [bh, bw] = b.shape;
-            return (by <= y+2 && by+bh > y+2) && (bx <= x+dx && bx+bw > x+dx);
-          });
-          if (blockBelow) h += 2;
+
+        // Räkna block som blockerar A-blockets väg ner till utgången
+        // Vi kollar rakt under A-blocket, kolumn 1 och 2, från underkanten av A till botten
+        let blockers = 0;
+        for (let row = y + 2; row < 5; row++) {
+          for (let col = x; col < x + 2; col++) {
+            const block = this.blocks.find(b => {
+              if (b.id === 'A') return false;
+              const [by, bx] = b.position;
+              const [bh, bw] = b.shape;
+              return (row >= by && row < by + bh && col >= bx && col < bx + bw);
+            });
+            if (block) blockers++;
+          }
         }
+        // Lägg till antalet block som blockerar vägen (vägblockare väger tungt)
+        h += blockers * 3;
         return h;
       }
 
@@ -333,6 +348,33 @@
       blk.position = [newY, newX];
     }
 
+    // --- Stegvis lösningsvisning ---
+    let lastSolutionSteps = null;
+    let currentStepIndex = 0;
+
+    function showStep(stepIndex) {
+      if (!lastSolutionSteps) return;
+      const outputEl = document.getElementById('output');
+      const step = lastSolutionSteps[stepIndex];
+      outputEl.textContent = `Steg ${stepIndex} av ${lastSolutionSteps.length - 1}\n\n${step.text}`;
+      document.getElementById('prevStepBtn').disabled = stepIndex === 0;
+      document.getElementById('nextStepBtn').disabled = stepIndex === lastSolutionSteps.length - 1;
+    }
+
+    document.getElementById('prevStepBtn').addEventListener('click', () => {
+      if (currentStepIndex > 0) {
+        currentStepIndex--;
+        showStep(currentStepIndex);
+      }
+    });
+
+    document.getElementById('nextStepBtn').addEventListener('click', () => {
+      if (lastSolutionSteps && currentStepIndex < lastSolutionSteps.length - 1) {
+        currentStepIndex++;
+        showStep(currentStepIndex);
+      }
+    });
+
     document.getElementById('solveBtn').addEventListener('click', () => {
       const rows = 5;
       const cols = 4;
@@ -342,12 +384,18 @@
       if (blocks.length === 0) {
         outputEl.textContent = 'Fel: Inga block har lagts till. Lägg till minst ett block innan du försöker lösa pusslet.';
         outputEl.setAttribute('aria-live', 'assertive');
+        document.getElementById('prevStepBtn').disabled = true;
+        document.getElementById('nextStepBtn').disabled = true;
+        lastSolutionSteps = null;
         return;
       }
       const targetBlock = blocks.find(b => b.type === 'A');
       if (!targetBlock) {
         outputEl.textContent = 'Fel: Det måste finnas ett stort block (typ A) som är målblocket som ska nå utgången.';
         outputEl.setAttribute('aria-live', 'assertive');
+        document.getElementById('prevStepBtn').disabled = true;
+        document.getElementById('nextStepBtn').disabled = true;
+        lastSolutionSteps = null;
         return;
       }
       const game = {
@@ -357,6 +405,8 @@
       };
       outputEl.textContent = 'Löser pussel... Detta kan ta en stund.';
       outputEl.setAttribute('aria-live', 'polite');
+      document.getElementById('prevStepBtn').disabled = true;
+      document.getElementById('nextStepBtn').disabled = true;
       setTimeout(() => {
         try {
           const result = window.Klotski.solve(game);
@@ -364,23 +414,40 @@
           if (!result) {
             outputEl.textContent = 'Ingen lösning funnen efter omfattande sökning.\nTips: Kontrollera blockplacering och försök igen.';
             outputEl.setAttribute('aria-live', 'assertive');
+            document.getElementById('prevStepBtn').disabled = true;
+            document.getElementById('nextStepBtn').disabled = true;
+            lastSolutionSteps = null;
             return;
           }
-          let txt = 'Start-bräde:\n' + buildBoardText(game) + '\n\n';
+          // Bygg steg-för-steg-lista
+          let steps = [];
+          let tempGame = {
+            boardSize: [rows, cols],
+            blocks: game.blocks.map(b => ({
+              id: b.id,
+              type: b.type,
+              shape: [...b.shape],
+              position: [...b.position]
+            }))
+          };
+          steps.push({ text: 'Start-bräde:\n' + buildBoardText(tempGame) });
           result.forEach((move, i) => {
-            applyMove(game, move);
+            applyMove(tempGame, move);
             const bid = move.block;
             const dirName = move.dirName || ['ner', 'höger', 'upp', 'vänster'][move.direction];
-            txt += (i+1) + '. Flytta block ' + bid + ' → ' + dirName + '\n';
-            txt += buildBoardText(game) + '\n\n';
+            steps.push({
+              text: `Flytta block ${bid} → ${dirName}\n` + buildBoardText(tempGame)
+            });
           });
-          txt = 'Lösning (' + result.length + ' steg):\n\n' + txt;
-          outputEl.textContent = txt;
-          outputEl.setAttribute('aria-live', 'polite');
-          lastSolution = txt;
+          lastSolutionSteps = steps;
+          currentStepIndex = 0;
+          showStep(currentStepIndex);
         } catch (error) {
           outputEl.textContent = 'Ett fel uppstod vid lösning av pusslet: ' + error.message;
           outputEl.setAttribute('aria-live', 'assertive');
+          document.getElementById('prevStepBtn').disabled = true;
+          document.getElementById('nextStepBtn').disabled = true;
+          lastSolutionSteps = null;
           console.error('Solver error:', error);
         }
       }, 100);
@@ -388,6 +455,14 @@
 
     let lastSolution = null;
     document.getElementById('saveBtn').addEventListener('click', () => {
+      // Om stegvis lösning finns, spara hela lösningen som text
+      if (lastSolutionSteps && lastSolutionSteps.length > 0) {
+        let txt = '';
+        lastSolutionSteps.forEach((step, i) => {
+          txt += `Steg ${i}:\n${step.text}\n\n`;
+        });
+        lastSolution = txt;
+      }
       if (!lastSolution) {
         alert('Ingen lösning att spara — kör lösaren först.');
         return;
@@ -436,6 +511,9 @@
         '\n\nMål: Flytta det stora A-blocket så att det täcker utgången (rad 5, kolumn 2-3).\n' +
         'Klicka på "Lös pussel" för att se lösningen.';
       outputEl.setAttribute('aria-live', 'polite');
+      document.getElementById('prevStepBtn').disabled = true;
+      document.getElementById('nextStepBtn').disabled = true;
+      lastSolutionSteps = null;
     });
 
     // Ny funktion: rensa brädet
@@ -444,6 +522,9 @@
       blockCounter = { A: 0, B: 0, C: 0, D: 0 };
       renderBlocksList();
       document.getElementById('output').textContent = 'Brädet är nu rensat.';
+      document.getElementById('prevStepBtn').disabled = true;
+      document.getElementById('nextStepBtn').disabled = true;
+      lastSolutionSteps = null;
     });
   </script>
 </body>
