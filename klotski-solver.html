@@ -9,6 +9,33 @@
     label { margin-right: 10px; }
     button { margin: 5px; padding: 5px 10px; }
     pre { background: #f0f0f0; padding: 10px; white-space: pre-wrap; }
+    #board {
+      display: grid;
+      grid-template-rows: repeat(5, 50px);
+      grid-template-columns: repeat(4, 50px);
+      gap: 2px;
+      background: #ccc;
+      width: max-content;
+      border: 2px solid #888;
+      margin: 20px 0;
+    }
+    .block {
+      position: relative;
+      border-radius: 6px;
+      border: 2px solid #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #222;
+      font-size: 1.2em;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .block.A { background: #e74c3c; color: #fff; }
+    .block.B { background: #3498db; color: #fff; }
+    .block.C { background: #f1c40f; color: #222; }
+    .block.D { background: #2ecc40; color: #fff; }
   </style>
 </head>
 <body>
@@ -42,13 +69,16 @@
   <button id="setupStandardBtn" aria-label="Sätt upp standard Klotski-pussel">Standarduppsättning</button>
   <button id="clearBtn" aria-label="Rensa brädet">Rensa brädet</button>
 
+  <h2>Grafiskt bräde:</h2>
+  <div id="board" aria-label="Klotski-bräde" tabindex="0"></div>
+
   <h2>Output / Lösning:</h2>
   <pre id="output" aria-live="polite" role="status"></pre>
 
-<div>
-  <button id="prevStepBtn" disabled>Föregående</button>
-  <button id="nextStepBtn" disabled>Nästa</button>
-</div>
+  <div>
+    <button id="prevStepBtn" disabled>Föregående</button>
+    <button id="nextStepBtn" disabled>Nästa</button>
+  </div>
 
   <script>
     const blocks = [];
@@ -254,6 +284,7 @@
         html += '</ul>';
         div.innerHTML = html;
       }
+      renderBoard(blocks);
     }
 
     function removeBlock(index) {
@@ -348,6 +379,27 @@
       blk.position = [newY, newX];
     }
 
+    // --- Grafisk rendering av brädet ---
+    function renderBoard(blocksToRender) {
+      const colorNames = { A: "röd", B: "blå", C: "gul", D: "grön" };
+      const boardDiv = document.getElementById('board');
+      boardDiv.innerHTML = '';
+      blocksToRender.forEach(block => {
+        const [h, w] = block.shape;
+        const [y, x] = block.position;
+        const blockDiv = document.createElement('div');
+        blockDiv.className = `block ${block.type}`;
+        blockDiv.style.gridRow = `${y + 1} / span ${h}`;
+        blockDiv.style.gridColumn = `${x + 1} / span ${w}`;
+        blockDiv.setAttribute(
+          'aria-label',
+          `Block ${block.id}, typ ${block.type}, färg ${colorNames[block.type]}, storlek ${h}x${w}, rad ${y+1}, kolumn ${x+1}`
+        );
+        blockDiv.textContent = block.id;
+        boardDiv.appendChild(blockDiv);
+      });
+    }
+
     // --- Stegvis lösningsvisning ---
     let lastSolutionSteps = null;
     let currentStepIndex = 0;
@@ -359,6 +411,10 @@
       outputEl.textContent = `Steg ${stepIndex} av ${lastSolutionSteps.length - 1}\n\n${step.text}`;
       document.getElementById('prevStepBtn').disabled = stepIndex === 0;
       document.getElementById('nextStepBtn').disabled = stepIndex === lastSolutionSteps.length - 1;
+      // Rita grafiskt bräde för detta steg om block-data finns
+      if (step.blocks) {
+        renderBoard(step.blocks);
+      }
     }
 
     document.getElementById('prevStepBtn').addEventListener('click', () => {
@@ -430,13 +486,27 @@
               position: [...b.position]
             }))
           };
-          steps.push({ text: 'Start-bräde:\n' + buildBoardText(tempGame) });
+          steps.push({
+            text: 'Start-bräde:\n' + buildBoardText(tempGame),
+            blocks: tempGame.blocks.map(b => ({
+              id: b.id,
+              type: b.type,
+              shape: [...b.shape],
+              position: [...b.position]
+            }))
+          });
           result.forEach((move, i) => {
             applyMove(tempGame, move);
             const bid = move.block;
             const dirName = move.dirName || ['ner', 'höger', 'upp', 'vänster'][move.direction];
             steps.push({
-              text: `Flytta block ${bid} → ${dirName}\n` + buildBoardText(tempGame)
+              text: `Flytta block ${bid} → ${dirName}\n` + buildBoardText(tempGame),
+              blocks: tempGame.blocks.map(b => ({
+                id: b.id,
+                type: b.type,
+                shape: [...b.shape],
+                position: [...b.position]
+              }))
             });
           });
           lastSolutionSteps = steps;
