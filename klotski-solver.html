@@ -87,6 +87,123 @@
       display: block;
       margin-bottom: 10px;
     }
+
+    /* Mobilvänlig CSS för telefoner och surfplattor */
+    @media (max-width: 768px) {
+      body { 
+        margin: 10px; 
+        font-size: 14px;
+      }
+      
+      h1 { 
+        font-size: 1.5em; 
+        margin-bottom: 15px;
+      }
+      
+      h2 { 
+        font-size: 1.2em; 
+        margin-top: 20px;
+      }
+      
+      /* Mindre bräde för mobil */
+      #board {
+        grid-template-columns: repeat(4, 45px);
+        grid-template-rows: repeat(5, 45px);
+        gap: 1px;
+        margin: 15px auto;
+      }
+      
+      /* Anpassa block och celler */
+      .block, .empty-cell {
+        font-size: 0.9em;
+        min-height: 43px;
+        min-width: 43px;
+      }
+      
+      /* Större knappar för touch */
+      button {
+        padding: 12px 16px;
+        margin: 8px 4px;
+        font-size: 16px; /* Viktigt för iOS - förhindrar zoom */
+        min-height: 44px; /* Apple's rekommenderade touch-storlek */
+      }
+      
+      /* Responsiva formulär */
+      fieldset {
+        padding: 10px;
+        margin-bottom: 15px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        margin-right: 0;
+      }
+      
+      select, input[type="number"] {
+        width: 100%;
+        max-width: 150px;
+        padding: 8px;
+        font-size: 16px; /* Förhindrar zoom på iOS */
+      }
+      
+      /* Mindre text i output */
+      #output {
+        font-size: 13px;
+        padding: 8px;
+      }
+      
+      /* Anpassa blocklista */
+      #blocksList ul {
+        padding-left: 15px;
+      }
+      
+      #blocksList li {
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+    }
+
+    /* Extra små skärmar (telefoner i porträttläge) */
+    @media (max-width: 480px) {
+      #board {
+        grid-template-columns: repeat(4, 35px);
+        grid-template-rows: repeat(5, 35px);
+      }
+      
+      .block, .empty-cell {
+        font-size: 0.8em;
+        min-height: 33px;
+        min-width: 33px;
+      }
+      
+      button {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      
+      h1 {
+        font-size: 1.3em;
+      }
+    }
+
+    /* Dölj stegknappar tills en lösning finns */
+.step-navigation {
+  display: none;
+}
+
+.step-navigation.visible {
+  display: block;
+}
+
+/* Dölj sparaknapp tills en lösning finns */
+.save-button {
+  display: none;
+}
+
+.save-button.visible {
+  display: inline-block;
+}
   </style>
 </head>
 <body>
@@ -116,7 +233,7 @@
   </fieldset>
 
   <button id="solveBtn" aria-label="Lös pussel">Lös pussel</button>
-  <button id="saveBtn" aria-label="Spara lösning">Spara lösning</button>
+<button id="saveBtn" class="save-button" aria-label="Spara lösning">Spara lösning</button>
   <button id="setupStandardBtn" aria-label="Sätt upp standard Klotski-pussel">Standarduppsättning</button>
   <button id="clearBtn" aria-label="Rensa brädet">Rensa brädet</button>
 
@@ -126,12 +243,13 @@
   <h2>Output / Lösning:</h2>
   <pre id="output" aria-live="polite" role="status"></pre>
 
-  <div>
+  <div class="step-navigation" id="stepNavigation">
     <button id="prevStepBtn" disabled>Föregående</button>
     <button id="nextStepBtn" disabled>Nästa</button>
   </div>
 
   <script>
+    // ...existing code...
     const blocks = [];
     let blockCounter = { A: 0, B: 0, C: 0, D: 0 };
 
@@ -481,6 +599,13 @@
 
     function showStep(stepIndex) {
       if (!lastSolutionSteps) return;
+
+        // Visa stegnavigation när lösning finns
+  document.getElementById('stepNavigation').className = 'step-navigation visible';
+
+    // Visa sparaknapp när lösning finns
+  document.getElementById('saveBtn').className = 'save-button visible';
+
       const outputEl = document.getElementById('output');
       const step = lastSolutionSteps[stepIndex];
       
@@ -529,6 +654,13 @@
       const escY = 4;
       const escX = 1;
       const outputEl = document.getElementById('output');
+
+      // Dölj stegnavigation när ny lösning startar
+  document.getElementById('stepNavigation').className = 'step-navigation';
+
+  // Dölj sparaknapp när ny lösning startar
+document.getElementById('saveBtn').className = 'save-button';
+
       if (blocks.length === 0) {
         outputEl.textContent = 'Fel: Inga block har lagts till. Lägg till minst ett block innan du försöker lösa pusslet.';
         outputEl.setAttribute('aria-live', 'assertive');
@@ -545,7 +677,7 @@
         document.getElementById('nextStepBtn').disabled = true;
         lastSolutionSteps = null;
         return;
-      }
+           }
       const game = {
         boardSize: [rows, cols],
         escapePoint: [escY, escX],
@@ -685,6 +817,8 @@
       document.getElementById('prevStepBtn').disabled = true;
       document.getElementById('nextStepBtn').disabled = true;
       lastSolutionSteps = null;
+        document.getElementById('stepNavigation').className = 'step-navigation';
+        document.getElementById('saveBtn').className = 'save-button';
     });
 
     // Ny funktion: rensa brädet
@@ -693,9 +827,11 @@
       blockCounter = { A: 0, B: 0, C: 0, D: 0 };
       renderBlocksList();
       document.getElementById('output').textContent = 'Brädet är nu rensat.';
-      document.getElementById('prevStepBtn').disabled = true;
+              document.getElementById('prevStepBtn').disabled = true;
       document.getElementById('nextStepBtn').disabled = true;
       lastSolutionSteps = null;
+document.getElementById('stepNavigation').className = 'step-navigation';
+      document.getElementById('saveBtn').className = 'save-button';
     });
   </script>
 </body>
