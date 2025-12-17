@@ -4,42 +4,76 @@ Detta är en webbaserad lösare för Klotski-pusslet (Huáròu mù), ett klassis
 
 ## Funktioner
 
-- Lägg till, ta bort och placera block av olika typer (A, B, C, D).
-- Standarduppsättning för klassiskt Klotski-pussel.
-- Lös pusslet automatiskt med A\*-sökning.
-- Spara lösningen som textfil.
-- Tillgänglighetsanpassad och enkel att använda direkt i webbläsaren.
+- **Interaktiv blockhantering**: Lägg till, ta bort och placera block av olika typer (A, B, C, D)
+- **Grafisk visualisering**: Färgkodade block med tydlig positionsinformation
+- **Standarduppsättning**: Förkonfigurerat klassiskt Klotski-pussel för snabb start
+- **Automatisk lösning**: Avancerad A\*-sökning hittar optimala lösningar
+- **Stegvis genomgång**: Navigera fram och tillbaka genom lösningen
+- **Fullständig tillgänglighet**: Optimerad för skärmläsare med tydliga aria-labels
+- **Exportfunktion**: Spara lösningen som textfil
+- **Responsiv design**: Fungerar i alla moderna webbläsare
 
 ## Så här använder du
 
-1. **Öppna `klotski-solver.html` i din webbläsare.**
-2. Lägg till block manuellt eller klicka på **Standarduppsättning** för att ladda ett klassiskt Klotski-bräde.
-3. Klicka på **Lös pussel** för att hitta en lösning.
-4. Lösningen visas steg för steg. Du kan spara den som textfil.
-5. Använd **Rensa brädet** för att börja om.
+1. **Öppna `klotski-solver.html` i din webbläsare**
+2. **Ladda ett pussel**:
+   - Klicka på **Standarduppsättning** för klassiskt Klotski-bräde
+   - Eller lägg till block manuellt genom att välja typ och position
+3. **Lös pusslet**: Klicka på **Lös pussel** för att hitta lösningen
+4. **Utforska lösningen**:
+   - Använd **Föregående/Nästa** för att gå igenom varje steg
+   - Det grafiska brädet uppdateras för varje drag
+5. **Spara**: Klicka på **Spara lösning** för att exportera som textfil
+6. **Börja om**: Använd **Rensa brädet** för att starta från början
 
 ## Blocktyper
 
-- **A**: Stort 2×2-block (rött, målblock)
-- **B**: Vertikalt 2×1-block
-- **C**: Horisontellt 1×2-block
-- **D**: Litet 1×1-block
+- **A (röd)**: Stort 2×2-block - målblocket som ska nå utgången
+- **B (blå)**: Vertikalt 2×1-block
+- **C (gul)**: Horisontellt 1×2-block
+- **D (grön)**: Litet 1×1-block
 
-## Mål
+## Spelregler
 
-Flytta det stora A-blocket så att det täcker utgången (rad 5, kolumn 2-3).
+**Mål**: Flytta det stora A-blocket så att det täcker utgångspositionerna (markerade med "Utgång") på rad 5, kolumn 2-3.
 
-## Exempel
+**Brädet**: 5×4 rutor med block som kan glida men inte lyftas eller roteras.
 
-Standarduppsättning:
+## Tillgänglighet
+
+Denna solver är helt optimerad för skärmläsare:
+
+- Varje position på brädet annonseras tydligt ("Block A, typ A, färg röd" eller "Tom position" eller "Utgång")
+- Fullständig tangentbordsnavigation
+- Live regions för dynamiska uppdateringar
+- Tydliga aria-labels på alla interaktiva element
+
+## Teknisk information
+
+- **Algoritm**: A\*-sökning med intelligent heuristik
+- **Optimering**: Effektiv tillståndsnyckelgenerering och kollisionsdetektering
+- **Prestanda**: Kan lösa komplexa pussel på sekunder
+- **Kompatibilitet**: Fungerar i alla moderna webbläsare utan externa beroenden
+
+## Standarduppsättning
+
+Det klassiska Klotski-pusslet:
 
 ```
-. A A .
-B . . B
-B C C B
-D D D D
-. . . .
+B1 A  A  B2
+B1 A  A  B2
+B3 C1 C1 B4
+D3 D4 D4 D2
+D1 Utgång Utgång D2
 ```
+
+Där:
+
+- `A` = Det röda 2×2 målblocket
+- `B1-B4` = Fyra blå vertikala block (2×1)
+- `C1` = Ett gult horisontellt block (1×2)
+- `D1-D4` = Fyra gröna små block (1×1)
+- `Utgång` = Målpositioner för A-blocket
 
 ## Licens
 
@@ -47,4 +81,4 @@ MIT
 
 ---
 
-\*Byggd av fredrik013
+_Byggd av fredrik013_

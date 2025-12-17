@@ -36,6 +36,57 @@
     .block.B { background: #3498db; color: #fff; }
     .block.C { background: #f1c40f; color: #222; }
     .block.D { background: #2ecc40; color: #fff; }
+    
+    /* Styling för tomma celler */
+    .empty-cell {
+      background: #f9f9f9;
+      border: 1px dashed #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 1.5em;
+      min-height: 48px;
+      min-width: 48px;
+      box-sizing: border-box;
+    }
+
+    .empty-cell:focus {
+      outline: 2px solid #007acc;
+      background: #e6f3ff;
+    }
+
+    /* Markera utgångspositioner */
+    .exit-cell {
+      background: #ffe4b3 !important;
+      border: 2px solid #ff9800 !important;
+    }
+    
+    /* Styling för grattismeddelande */
+    .success-message {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin: 20px 0;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      font-size: 1.2em;
+      font-weight: bold;
+      animation: celebration 0.6s ease-in-out;
+    }
+    
+    @keyframes celebration {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .success-message .emoji {
+      font-size: 2em;
+      display: block;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -180,15 +231,11 @@
       }
 
       heuristic() {
-        // Hitta A-blocket
         const aBlock = this.blocks.find(b => b.id === 'A');
         if (!aBlock) return 9999;
         const [y, x] = aBlock.position;
-        // Grundavstånd till målposition (rad 3, kolumn 1)
         let h = Math.abs(3 - y) + Math.abs(1 - x);
 
-        // Räkna block som blockerar A-blockets väg ner till utgången
-        // Vi kollar rakt under A-blocket, kolumn 1 och 2, från underkanten av A till botten
         let blockers = 0;
         for (let row = y + 2; row < 5; row++) {
           for (let col = x; col < x + 2; col++) {
@@ -201,7 +248,6 @@
             if (block) blockers++;
           }
         }
-        // Lägg till antalet block som blockerar vägen (vägblockare väger tungt)
         h += blockers * 3;
         return h;
       }
@@ -330,28 +376,6 @@
       document.getElementById('blkX').value = '1';
     });
 
-    function buildBoardText(game) {
-      const [rows, cols] = game.boardSize;
-      const board = [];
-      for (let y = 0; y < rows; y++) {
-        board[y] = [];
-        for (let x = 0; x < cols; x++) board[y][x] = '.';
-      }
-      game.blocks.forEach((blk) => {
-        const id = blk.id;
-        const [h, w] = blk.shape;
-        const [py, px] = blk.position;
-        for (let dy = 0; dy < h; dy++) {
-          for (let dx = 0; dx < w; dx++) {
-            if (py+dy < rows && px+dx < cols) {
-              board[py+dy][px+dx] = id;
-            }
-          }
-        }
-      });
-      return board.map(row => row.join(' ')).join('\n');
-    }
-
     function applyMove(game, move) {
       const blk = game.blocks.find(b => b.id === move.block);
       if (!blk) return;
@@ -384,20 +408,71 @@
       const colorNames = { A: "röd", B: "blå", C: "gul", D: "grön" };
       const boardDiv = document.getElementById('board');
       boardDiv.innerHTML = '';
+      
+      // Skapa en matris för att hålla reda på vad som finns på varje position
+      const boardMatrix = Array(5).fill().map(() => Array(4).fill(null));
+      
+      // Fyll matrisen med block-information
       blocksToRender.forEach(block => {
         const [h, w] = block.shape;
         const [y, x] = block.position;
-        const blockDiv = document.createElement('div');
-        blockDiv.className = `block ${block.type}`;
-        blockDiv.style.gridRow = `${y + 1} / span ${h}`;
-        blockDiv.style.gridColumn = `${x + 1} / span ${w}`;
-        blockDiv.setAttribute(
-          'aria-label',
-          `Block ${block.id}, typ ${block.type}, färg ${colorNames[block.type]}, storlek ${h}x${w}, rad ${y+1}, kolumn ${x+1}`
-        );
-        blockDiv.textContent = block.id;
-        boardDiv.appendChild(blockDiv);
+        for (let dy = 0; dy < h; dy++) {
+          for (let dx = 0; dx < w; dx++) {
+            if (y + dy < 5 && x + dx < 4) {
+              boardMatrix[y + dy][x + dx] = block;
+            }
+          }
+        }
       });
+      
+      // Rita upp hela brädet position för position
+      for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 4; x++) {
+          const block = boardMatrix[y][x];
+          const cell = document.createElement('div');
+          cell.style.gridRow = `${y + 1}`;
+          cell.style.gridColumn = `${x + 1}`;
+          cell.setAttribute('tabindex', '0');
+          cell.setAttribute('role', 'gridcell');
+          
+          if (block) {
+            // Position är upptagen av ett block
+            cell.className = `block ${block.type}`;
+            const [h, w] = block.shape;
+            const [by, bx] = block.position;
+            
+            // Lägg bara till block-ID på övre vänstra hörnet av blocket
+            if (y === by && x === bx) {
+              cell.textContent = block.id;
+              // Sätt span för större block
+              if (h > 1 || w > 1) {
+                cell.style.gridRow = `${by + 1} / span ${h}`;
+                cell.style.gridColumn = `${bx + 1} / span ${w}`;
+              }
+            }
+            
+            cell.setAttribute(
+              'aria-label',
+              `Block ${block.id}, typ ${block.type}, färg ${colorNames[block.type]}, storlek ${h}x${w}, rad ${y+1}, kolumn ${x+1}`
+            );
+          } else {
+            // Position är tom
+            cell.className = 'empty-cell';
+            
+            // Markera utgångspositioner (rad 5, kolumn 2-3)
+            if (y === 4 && (x === 1 || x === 2)) {
+              cell.classList.add('exit-cell');
+              cell.setAttribute('aria-label', `Utgångsposition, rad ${y+1}, kolumn ${x+1}`);
+              cell.textContent = 'Utgång';
+            } else {
+              cell.setAttribute('aria-label', `Tom position, rad ${y+1}, kolumn ${x+1}`);
+              cell.textContent = 'Tom position';
+            }
+          }
+          
+          boardDiv.appendChild(cell);
+        }
+      }
     }
 
     // --- Stegvis lösningsvisning ---
@@ -408,10 +483,27 @@
       if (!lastSolutionSteps) return;
       const outputEl = document.getElementById('output');
       const step = lastSolutionSteps[stepIndex];
-      outputEl.textContent = `Steg ${stepIndex} av ${lastSolutionSteps.length - 1}\n\n${step.text}`;
+      
+      // Kolla om vi är på sista steget
+      if (stepIndex === lastSolutionSteps.length - 1) {
+        // Visa grattismeddelande
+        outputEl.innerHTML = `<div class="success-message">
+          <span class="emoji">🎉</span>
+          <div>Grattis! Du har klarat pusslet!</div>
+          <div style="margin-top: 10px; font-size: 0.9em;">Löst på ${lastSolutionSteps.length - 1} steg</div>
+        </div>`;
+        outputEl.setAttribute('aria-live', 'assertive');
+      } else {
+        // Visa bara steg-information istället för ASCII-text
+        outputEl.innerHTML = `<h3>Steg ${stepIndex} av ${lastSolutionSteps.length - 1}</h3>
+          ${stepIndex === 0 ? '<p>Startposition</p>' : `<p>${step.description}</p>`}`;
+        outputEl.setAttribute('aria-live', 'polite');
+      }
+      
       document.getElementById('prevStepBtn').disabled = stepIndex === 0;
       document.getElementById('nextStepBtn').disabled = stepIndex === lastSolutionSteps.length - 1;
-      // Rita grafiskt bräde för detta steg om block-data finns
+      
+      // Rita grafiskt bräde för detta steg
       if (step.blocks) {
         renderBoard(step.blocks);
       }
@@ -475,7 +567,7 @@
             lastSolutionSteps = null;
             return;
           }
-          // Bygg steg-för-steg-lista
+          // Bygg steg-för-steg-lista med grafiska bräden
           let steps = [];
           let tempGame = {
             boardSize: [rows, cols],
@@ -486,8 +578,10 @@
               position: [...b.position]
             }))
           };
+          
+          // Startposition
           steps.push({
-            text: 'Start-bräde:\n' + buildBoardText(tempGame),
+            description: 'Startposition',
             blocks: tempGame.blocks.map(b => ({
               id: b.id,
               type: b.type,
@@ -495,12 +589,14 @@
               position: [...b.position]
             }))
           });
+          
+          // Varje drag
           result.forEach((move, i) => {
             applyMove(tempGame, move);
             const bid = move.block;
             const dirName = move.dirName || ['ner', 'höger', 'upp', 'vänster'][move.direction];
             steps.push({
-              text: `Flytta block ${bid} → ${dirName}\n` + buildBoardText(tempGame),
+              description: `Flytta block ${bid} → ${dirName}`,
               blocks: tempGame.blocks.map(b => ({
                 id: b.id,
                 type: b.type,
@@ -509,9 +605,11 @@
               }))
             });
           });
+          
           lastSolutionSteps = steps;
           currentStepIndex = 0;
           showStep(currentStepIndex);
+          
         } catch (error) {
           outputEl.textContent = 'Ett fel uppstod vid lösning av pusslet: ' + error.message;
           outputEl.setAttribute('aria-live', 'assertive');
@@ -527,10 +625,15 @@
     document.getElementById('saveBtn').addEventListener('click', () => {
       // Om stegvis lösning finns, spara hela lösningen som text
       if (lastSolutionSteps && lastSolutionSteps.length > 0) {
-        let txt = '';
+        let txt = 'Klotski Lösning\n================\n\n';
         lastSolutionSteps.forEach((step, i) => {
-          txt += `Steg ${i}:\n${step.text}\n\n`;
+          if (i === 0) {
+            txt += `Steg ${i}: Startposition\n\n`;
+          } else {
+            txt += `Steg ${i}: ${step.description}\n\n`;
+          }
         });
+        txt += `\nLöst på ${lastSolutionSteps.length - 1} steg totalt.`;
         lastSolution = txt;
       }
       if (!lastSolution) {
@@ -566,20 +669,18 @@
       blocks.push({ id: 'D4', type: 'D', shape: [1, 1], position: [3, 2] });
       blockCounter.D = 4;
       renderBlocksList();
-      const game = {
-        boardSize: [5, 4],
-        escapePoint: [4, 1],
-        blocks: blocks.map(b => ({ shape: b.shape, position: [...b.position], id: b.id, type: b.type }))
-      };
+      
       const outputEl = document.getElementById('output');
-      outputEl.textContent = 'Standarduppsättning laddad!\n\nBlocktyper:\n' +
-        '• A (rött): Stort 2×2 block - målblock\n' +
-        '• B (blå): Vertikala 2×1 block\n' +
-        '• C (gul): Horisontellt 1×2 block\n' +
-        '• D (grön): Små 1×1 block\n\n' +
-        'Startposition:\n' + buildBoardText(game) + 
-        '\n\nMål: Flytta det stora A-blocket så att det täcker utgången (rad 5, kolumn 2-3).\n' +
-        'Klicka på "Lös pussel" för att se lösningen.';
+      outputEl.innerHTML = `<h3>Standarduppsättning laddad!</h3>
+        <p><strong>Mål:</strong> Flytta det stora A-blocket (röd, 2×2) så att det täcker utgångspositionerna som är markerade med "Utgång".</p>
+        <p><strong>Blocktyper:</strong></p>
+        <ul>
+          <li><strong>A (röd):</strong> Stort 2×2 block - målblock</li>
+          <li><strong>B (blå):</strong> Vertikala 2×1 block</li>
+          <li><strong>C (gul):</strong> Horisontellt 1×2 block</li>
+          <li><strong>D (grön):</strong> Små 1×1 block</li>
+        </ul>
+        <p>Klicka på "Lös pussel" för att se lösningen steg för steg.</p>`;
       outputEl.setAttribute('aria-live', 'polite');
       document.getElementById('prevStepBtn').disabled = true;
       document.getElementById('nextStepBtn').disabled = true;
