@@ -2,6 +2,10 @@
 
 Detta är en webbaserad lösare för Klotski-pusslet (Huáròu mù), ett klassiskt blockpussel där målet är att flytta det stora röda blocket (A) till utgången längst ner i mitten av brädet.
 
+## 🎮 Live Demo
+
+**[Spela direkt i webbläsaren →](https://fredrik013.github.io/klotski-solver/)**
+
 ## Funktioner
 
 - **Interaktiv blockhantering**: Lägg till, ta bort och placera block av olika typer (A, B, C, D)
@@ -11,11 +15,11 @@ Detta är en webbaserad lösare för Klotski-pusslet (Huáròu mù), ett klassis
 - **Stegvis genomgång**: Navigera fram och tillbaka genom lösningen
 - **Fullständig tillgänglighet**: Optimerad för skärmläsare med tydliga aria-labels
 - **Exportfunktion**: Spara lösningen som textfil
-- **Responsiv design**: Fungerar i alla moderna webbläsare
+- **Responsiv design**: Fungerar på både desktop och mobila enheter
 
 ## Så här använder du
 
-1. **Öppna `klotski-solver.html` i din webbläsare**
+1. **Öppna live demon eller `klotski-solver.html` i din webbläsare**
 2. **Ladda ett pussel**:
    - Klicka på **Standarduppsättning** för klassiskt Klotski-bräde
    - Eller lägg till block manuellt genom att välja typ och position
@@ -54,6 +58,7 @@ Denna solver är helt optimerad för skärmläsare:
 - **Optimering**: Effektiv tillståndsnyckelgenerering och kollisionsdetektering
 - **Prestanda**: Kan lösa komplexa pussel på sekunder
 - **Kompatibilitet**: Fungerar i alla moderna webbläsare utan externa beroenden
+- **Mobilvänlig**: Responsiv design för telefoner och surfplattor
 
 ## Standarduppsättning
 
