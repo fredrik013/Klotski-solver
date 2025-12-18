@@ -343,7 +343,10 @@ function renderBoard(blocksToRender) {
 
         // Lägg bara till block-ID på övre vänstra hörnet av blocket
         if (y === by && x === bx) {
-          cell.textContent = block.id;
+          if (!(h === 1 && w === 1)) {
+            cell.textContent = block.id;
+          }
+
           // Sätt span för större block
           if (h > 1 || w > 1) {
             cell.style.gridRow = `${by + 1} / span ${h}`;
